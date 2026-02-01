@@ -1,21 +1,18 @@
-import express from "express";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import cors from "cors";
 
-const app = express();
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
 
-app.use(cors());
-app.use(express.json());
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
-app.post("/api/generate", async (req, res) => {
   try {
     const { prompt } = req.body;
 
     if (!prompt) {
       return res.status(400).json({ error: "Prompt is required" });
     }
+
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
     const model = genAI.getGenerativeModel({
       model: "gemini-2.5-flash",
@@ -24,12 +21,9 @@ app.post("/api/generate", async (req, res) => {
     const result = await model.generateContent(prompt);
     const text = result.response.text();
 
-    res.json({ result: text });
+    return res.status(200).json({ result: text });
   } catch (error) {
     console.error("Gemini Error:", error);
-    res.status(500).json({ error: "Model failed to generate code." });
+    return res.status(500).json({ error: "Generation failed" });
   }
-});
-
-// 🔴 DO NOT use app.listen on Vercel
-export default app;
+}
